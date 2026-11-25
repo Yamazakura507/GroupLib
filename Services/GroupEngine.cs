@@ -106,8 +106,9 @@ public static class GroupEngine
             bucket.Items.Add(item);
         }
 
-        return buckets.Select(bucket => level == rules.Count - 1 
-                ? new GroupNode<TItem, TParameter>(parameter, bucket.Key, children: bucket.Items.Build(rules, keySelector, level + 1)) 
-                : new GroupNode<TItem, TParameter>(parameter, bucket.Key, items: bucket.Items)).ToList();
+        return buckets.Select(bucket => level == rules.Count - 1
+                ? new GroupNode<TItem, TParameter>(parameter, bucket.Key, items: bucket.Items)
+                : new GroupNode<TItem, TParameter>(parameter, bucket.Key, children: bucket.Items.Build(rules, keySelector, level + 1)))
+            .ToList();
     }
 }
