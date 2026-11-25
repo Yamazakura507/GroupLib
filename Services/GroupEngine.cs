@@ -75,26 +75,39 @@ public static class GroupEngine
     {
         TParameter parameter = rules[level].GroupParametr;
         List<GroupBucket<TItem>> buckets = [];
+        Dictionary<object, GroupBucket<TItem>> bucketsByKey = [];
+        GroupBucket<TItem>? nullBucket = null;
 
         foreach (TItem item in items)
         {
             object? key = keySelector(item, parameter);
-            GroupBucket<TItem>? bucket = buckets.FirstOrDefault(candidate => Equals(candidate.Key, key));
+            GroupBucket<TItem>? bucket;
 
-            if (bucket is null)
+            if (key is null)
+            {
+                bucket = nullBucket;
+
+                if (bucket is null)
+                {
+                    bucket = new GroupBucket<TItem>(null);
+                    nullBucket = bucket;
+
+                    buckets.Add(bucket);
+                }
+            }
+            else if (!bucketsByKey.TryGetValue(key, out bucket))
             {
                 bucket = new GroupBucket<TItem>(key);
+
+                bucketsByKey.Add(key, bucket);
                 buckets.Add(bucket);
             }
 
             bucket.Items.Add(item);
         }
 
-        return buckets.Select(bucket =>
-        {
-            if (level == rules.Count - 1) return new GroupNode<TItem, TParameter>(parameter, bucket.Key, items: bucket.Items);
-
-            return new GroupNode<TItem, TParameter>(parameter, bucket.Key, children: bucket.Items.Build(rules, keySelector, level + 1));
-        }).ToList();
+        return buckets.Select(bucket => level == rules.Count - 1 
+                ? new GroupNode<TItem, TParameter>(parameter, bucket.Key, children: bucket.Items.Build(rules, keySelector, level + 1)) 
+                : new GroupNode<TItem, TParameter>(parameter, bucket.Key, items: bucket.Items)).ToList();
     }
 }
